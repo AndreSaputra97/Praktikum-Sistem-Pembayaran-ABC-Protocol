@@ -1,9 +1,9 @@
-# Percobaan 3
-
 from core.base import PaymentMethod
+from core.registry import register_plugin
 from core.utils import buat_id
 
 
+@register_plugin("ewallet")
 class EWallet(PaymentMethod):
 
     BATAS_TRANSAKSI = 2_000_000

@@ -1,53 +1,51 @@
-from core.notifiers import ConsoleNotifier, EmailNotifier
+from core.notifiers import ConsoleNotifier
 from core.processor import PaymentProcessor
-
-from plugins.ewallet import EWallet
-from plugins.transfer_bank import TransferBank
-
-
-# Identitas pelanggan
-email = "andi@utr.ac.id"
+from core.registry import buat_metode, daftar_plugin
+from core.utils import rupiah
+from plugins import muat_semua_plugin
 
 
-# 1. Inisialisasi PaymentProcessor
-pemroses = PaymentProcessor(ConsoleNotifier())
+def main() -> None:
+
+    # Memuat seluruh plugin secara otomatis
+    muat_semua_plugin()
+
+    print("Plugin terdaftar:", daftar_plugin())
+    print("-" * 60)
+
+    # Membuat pemroses pembayaran
+    pemroses = PaymentProcessor(ConsoleNotifier())
+
+    # Daftar skenario transaksi
+    skenario = [
+        ("transfer", {"saldo": 1_000_000, "bank": "BCA"}, 250_000),
+        ("ewallet", {"saldo": 100_000}, 150_000),
+        ("ewallet", {"saldo": 5_000_000}, 2_500_000),
+        ("qris", {}, 50_000),
+    ]
+
+    # Menjalankan setiap skenario
+    for kode, parameter, jumlah in skenario:
+
+        try:
+            metode = buat_metode(kode, **parameter)
+
+        except KeyError as err:
+            print("[PERINGATAN]", err)
+            continue
+
+        pemroses.checkout(
+            metode,
+            jumlah,
+            pelanggan="mahasiswa@utr.ac.id"
+        )
+
+    print("-" * 60)
+    print("Riwayat transaksi berhasil:")
+
+    for trx_id, nama, jumlah in pemroses.riwayat:
+        print(f"  {trx_id} | {nama} | {rupiah(jumlah)}")
 
 
-# 2. Pengujian pembayaran Transfer Bank
-pemroses.checkout(
-    TransferBank(saldo=1_000_000),
-    250_000,
-    email
-)
-
-
-# 3. Pengujian pembayaran E-Wallet
-pemroses.checkout(
-    EWallet(saldo=100_000),
-    150_000,
-    email
-)
-
-
-# 4. Mengganti kanal notifikasi
-# Tanpa mengubah kode PaymentProcessor
-pemroses.notifier = EmailNotifier()
-
-dana = EWallet(
-    saldo=500_000,
-    provider="DANA"
-)
-
-pemroses.checkout(
-    dana,
-    300_000,
-    email
-)
-
-
-# 5. Pengujian Notifier tidak valid
-try:
-    PaymentProcessor(notifier="bukan notifier")
-
-except TypeError as e:
-    print("Error:", e)
+if __name__ == "__main__":
+    main()
