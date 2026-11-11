@@ -23,15 +23,21 @@ class PaymentMethod(ABC):
     def bayar(self, jumlah: float) -> str:
         """Proses pembayaran, lalu kembalikan ID transaksi."""
 
-    def proses(self, jumlah: float) -> str:
-        """Template method: urutan langkah dijaga oleh kelas induk."""
+    def proses(self, jumlah: float) -> tuple[str, float, float]:
+        admin = self.biaya_admin(jumlah)
+        total = jumlah + admin
 
-        if jumlah <= 0:
-            raise PembayaranGagal("Jumlah pembayaran harus lebih dari 0")
-
-        if not self.validasi(jumlah):
+        if not self.validasi(total):
             raise PembayaranGagal(
-                f"{self.nama} menolak pembayaran {rupiah(jumlah)}"
+                "Saldo tidak mencukupi atau batas transaksi terlampaui."
             )
 
-        return self.bayar(jumlah)
+        trx_id = self.bayar(total)
+
+        return trx_id, admin, total
+
+    @abstractmethod
+    def biaya_admin(self, jumlah: float) -> float:
+        """Menghitung biaya administrasi pembayaran."""
+        pass
+

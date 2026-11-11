@@ -22,7 +22,7 @@ class PaymentProcessor:
     ) -> bool:
 
         try:
-            trx_id = metode.proses(jumlah)
+            trx_id, admin, total = metode.proses(jumlah)
 
         except PembayaranGagal as err:
             self.notifier.kirim(pelanggan, f"Pembayaran gagal: {err}")
@@ -30,10 +30,16 @@ class PaymentProcessor:
 
         self.riwayat.append((trx_id, metode.nama, jumlah))
 
-        self.notifier.kirim(
-            pelanggan,
-            f"Pembayaran {rupiah(jumlah)} via {metode.nama} berhasil. "
-            f"ID: {trx_id}",
+        pesan = (
+            f"ID Transaksi: {trx_id}\n"
+            f"Pembayaran berhasil!\n"
+            f"Metode: {metode.nama}\n"
+            f"Jumlah: {rupiah(jumlah)}\n"
+            f"Biaya Admin: {rupiah(admin)}\n"
+            f"Total Pembayaran: {rupiah(total)}"
         )
+        
+        self.notifier.kirim(
+            pelanggan, pesan)
 
         return True
